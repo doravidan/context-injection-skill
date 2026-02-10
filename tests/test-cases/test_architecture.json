@@ -1,0 +1,16 @@
+{
+  "name": "Architecture Recommendation - Event Processing",
+  "task": "Recommend an architecture for our new event processing system",
+  "without_context": "We need to build an event processing system for our e-commerce platform. What architecture would you recommend?",
+  "with_context": "## Task\nRecommend an architecture for our new event processing system.\n\n## Requirements\n- Process user behavior events (page views, clicks, add-to-cart, purchases)\n- Real-time personalization: update recommendation model within 5 minutes of event\n- Analytics dashboard: aggregate metrics with max 15-minute delay\n- Event replay capability for model retraining\n- Must handle Black Friday traffic: 50K events/sec peak (normal: 5K/sec)\n- 90-day retention for raw events, 2-year for aggregates\n\n## Constraints\n- **Team:** 4 backend engineers, 1 data engineer. No Kafka expertise.\n- **Budget:** $8K/month AWS spend cap for this system\n- **Timeline:** MVP in 6 weeks, full system in 12 weeks\n- **Compliance:** GDPR — must support per-user event deletion within 72 hours\n- **Existing infra:** AWS only. Currently use RDS PostgreSQL, ElastiCache Redis, S3, ECS Fargate\n\n## Current System\n```\nUser Actions → REST API → PostgreSQL (events table)\n                            ↓\n                    Nightly batch job → CSV → S3 → ML team picks up manually\n```\n- Events table has 180M rows, queries are slow\n- Nightly job takes 4 hours, sometimes fails silently\n- ML team complains about stale data (24h+ delay)\n- Analytics team runs queries directly on prod DB (causes slowdowns)\n\n## Failed Attempts\n1. **Kafka (2024):** Tried to set up Kafka cluster. Team struggled with operations (partition rebalancing, ZooKeeper issues). Abandoned after 3 weeks.\n2. **Kinesis (2024):** PoC worked but cost estimate was $15K/month at peak traffic. Over budget.\n\n## Team Preferences\n- Managed services over self-hosted (learned from Kafka attempt)\n- Prefer Python/Node.js (team's strengths)\n- Want to avoid vendor lock-in where possible, but pragmatic about it\n- Already have Terraform modules for ECS, S3, RDS\n\n## Related Systems\n- Recommendation service: Python, runs on ECS, expects features as Redis hash\n- Analytics dashboard: Metabase connected to PostgreSQL\n- User service: Has GDPR deletion endpoint, emits 'user-deleted' SNS topic\n\n## Non-Functional Requirements\n- 99.9% availability for event ingestion\n- Max 0.1% event loss acceptable\n- Must pass SOC2 audit (logging, encryption at rest/transit)",
+  "evaluation_criteria": [
+    "recommends SQS/SNS or managed streaming (not self-hosted Kafka)",
+    "stays within $8K/month budget",
+    "accounts for 50K events/sec Black Friday peak",
+    "addresses GDPR per-user deletion requirement",
+    "acknowledges team has no Kafka expertise",
+    "proposes realistic 6-week MVP scope",
+    "integrates with existing infra (ECS, S3, Redis, PostgreSQL)",
+    "doesn't suggest Kinesis (too expensive) or self-hosted Kafka (failed before)"
+  ]
+}

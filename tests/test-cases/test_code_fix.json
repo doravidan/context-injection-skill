@@ -1,0 +1,13 @@
+{
+  "name": "Fix NullPointer Bug",
+  "task": "Fix the NullPointerException in this code",
+  "without_context": "Fix the NullPointerException in my Java code. It crashes sometimes when processing user data.",
+  "with_context": "## Task\nFix the NullPointerException in this code.\n\n## Code (UserService.java)\n```java\npublic class UserService {\n    private final UserRepository userRepo;\n    private final NotificationService notifier;\n\n    public UserProfile getProfile(String userId) {\n        User user = userRepo.findById(userId);\n        Address address = user.getAddress();           // line 42\n        String city = address.getCity().toUpperCase();  // line 43\n        notifier.sendWelcome(user.getEmail());\n        return new UserProfile(user.getName(), city, user.getEmail());\n    }\n}\n```\n\n## Error Log\n```\njava.lang.NullPointerException\n    at com.app.service.UserService.getProfile(UserService.java:43)\n    at com.app.controller.UserController.showProfile(UserController.java:28)\n    at org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:897)\nCaused by: null value for Address.city on userId=usr_38291\n```\n\n## Database Record (usr_38291)\n```json\n{\"id\": \"usr_38291\", \"name\": \"Alice\", \"email\": \"alice@test.com\", \"address\": {\"street\": \"123 Main St\", \"city\": null, \"zip\": \"10001\"}}\n```\n\n## Constraints\n- This is a Spring Boot 3.x app\n- ~2000 users, ~15% have null city values\n- Cannot change the database schema (shared with billing team)\n- Must remain backward-compatible with UserProfile API consumers\n- Team coding standards require Optional-based null handling (no raw null checks)\n\n## Related Code\n```java\n// UserProfile is used by 3 downstream services via REST API\npublic record UserProfile(String name, String city, String email) {}\n// city=null is acceptable in the API contract (verified with consumers)\n```",
+  "evaluation_criteria": [
+    "identifies address.getCity() as the null source (not address itself)",
+    "uses Optional-based handling per team standards",
+    "preserves backward compatibility with UserProfile API",
+    "handles the 15% null-city case gracefully",
+    "does not suggest schema changes"
+  ]
+}
